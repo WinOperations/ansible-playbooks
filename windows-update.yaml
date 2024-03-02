@@ -1,0 +1,13 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Install all security, critical and rollup updates without a scheduled task
+    win_updates:
+      category_names:
+      - CriticalUpdates
+      - SecurityUpdates
+      - UpdateRollups
+      log_path: C:\Temp\ansible-windows-update.txt
+      state: installed
+      reboot: yes
