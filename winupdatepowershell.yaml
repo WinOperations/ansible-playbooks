@@ -4,4 +4,9 @@
   tasks:
   - name: Windows Update Via Powershell
    ansible.windows.win_powershell:
-   script: | Install-WindowsUpdate -MicrosoftUpdate -AcceptAll 
+   script: | 
+   Install-WindowsUpdate
+   executable: pwsh.exe
+   arguments:
+    - -ExecutionPolicy
+    - ByPass
