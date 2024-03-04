@@ -1,0 +1,6 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: Windows Update Via Powershell
+   win_command: powershell.exe Install-WindowsUpdate -MicrosoftUpdate -AcceptAll 
