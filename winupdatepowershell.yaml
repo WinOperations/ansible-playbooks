@@ -1,12 +1,28 @@
 ---
-- hosts: all
-  gather_facts: no
+- name: Wake up VM and perform Windows update via Powershell
+  hosts: windows
+  become: yes
   tasks:
-  - name: Windows Update Via Powershell
-   ansible.windows.win_powershell:
-   script: | 
-   Install-WindowsUpdate
-   executable: pwsh.exe
-   arguments:
-    - -ExecutionPolicy
-    - ByPass
+    - name: Ensure the VM is started on Hyper-V
+      win_shell: |
+        $vmName = "YourVMName"
+        $vm = Get-VM -Name $vmName
+        if ($vm.State -eq 'Off') {
+            Start-VM -Name $vmName
+            Start-Sleep -Seconds 30 # Optional sleep to give the VM time to start
+        }
+      run_once: yes
+      delegate_to: localhost
+
+    - name: Wait for the VM to become reachable
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 5986 # WinRM port, or use 3389 for RDP
+        delay: 10
+        timeout: 300
+      delegate_to: localhost
+
+    - name: Perform Windows Update via PowerShell
+      ansible.windows.win_powershell:
+        command: |
+          Install-WindowsUpdate -AcceptAll -AutoReboot
