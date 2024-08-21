@@ -1,7 +1,7 @@
 ---
 - name: Wake up VM and perform Windows update via Powershell
   hosts: windows
-  become: yes
+  become: no
   vars:
     vm_name: "{{ vm_name | default('default_vm_name') }}"  # Nombre de la VM, puede ser pasado como variable
     hyperv_host_ip: "10.1.21.20"  # IP del host Hyper-V
