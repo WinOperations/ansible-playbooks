@@ -1,14 +1,16 @@
 ---
 - name: Wake up VM and perform Windows update via Powershell
-  hosts: windows
+  hosts: all
   become: yes
+  vars:
+    vm_name: "{{ vm_name | default('default_vm_name') }}"  # Nombre de la VM, puede ser pasado como variable
+
   tasks:
     - name: Ensure the VM is started on Hyper-V
       win_shell: |
-        $vmName = "YourVMName"
-        $vm = Get-VM -Name $vmName
+        $vm = Get-VM -Name "{{ vm_name }}"
         if ($vm.State -eq 'Off') {
-            Start-VM -Name $vmName
+            Start-VM -Name "{{ vm_name }}"
             Start-Sleep -Seconds 30 # Optional sleep to give the VM time to start
         }
       run_once: yes
