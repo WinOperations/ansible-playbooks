@@ -4,6 +4,7 @@
   become: yes
   vars:
     vm_name: "{{ vm_name | default('default_vm_name') }}"  # Nombre de la VM, puede ser pasado como variable
+    hyperv_host_ip: "10.1.21.20"  # IP del host Hyper-V
 
   tasks:
     - name: Ensure the VM is started on Hyper-V
@@ -14,12 +15,12 @@
             Start-Sleep -Seconds 30 # Optional sleep to give the VM time to start
         }
       run_once: yes
-      delegate_to: localhost
+      delegate_to: "{{ hyperv_host_ip }}"
 
     - name: Wait for the VM to become reachable
       wait_for:
         host: "{{ ansible_host }}"
-        port: 5986 # WinRM port, or use 3389 for RDP
+        port: 5986  # WinRM port, or use 3389 for RDP, or 22 for SSH
         delay: 10
         timeout: 300
       delegate_to: localhost
