@@ -5,7 +5,7 @@
   vars:
     vm_name: "{{ vm_name | default('default_vm_name') }}"  # Nombre de la VM, puede ser pasado como variable
     hyperv_host_ip: "10.1.21.20"  # IP del host Hyper-V
-
+    ansible_winrm_port: 5985
   tasks:
     - name: Ensure the VM is started on Hyper-V
       win_shell: |
