@@ -1,58 +1,85 @@
 ---
-# DESCRIPTION
-# Apply windows updates
+# Tasks to patch a Windows Server
 
-- name: Power on VM and perform Windows update via Powershell
+- name: Windows update playbook
   hosts: windows
-  become: no
-  gather_facts: no
-  vars:
-    ansible_user: "Administrador"
-    ansible_password: "w1N0p€r2025!"
-    ansible_port: 22
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-    ansible_ssh_retries: 3
-    ansible_become_method: runas
-    ansible_become_user: "{{ ansible_user }}"
-    vm_name: "01 - LAB - GAM" 
-    vm_ip: "10.1.21.24"
-    
-  tasks: 
-    - name: Power on the VM using PowerShell
-      ansible.builtin.shell: |
-        Start-VM -Name "{{ vm_name }}"
-      args:
-        executable: powershell.exe
+  gather_facts: false
+  become: true
 
-    - name: Wait for VM to become available
-      ansible.builtin.wait_for:
-        host: "{{ vm_ip }}"
-        port: 5985
-        timeout: 300
-
-- name: Prepare and Update Windows VM via PowerShell
-  hosts: "01 - LAB - GAM"
   tasks:
-    - name: Set TLS 1.2 as Security Protocol
-      ansible.windows.win_powershell:
-        command: '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12'
-        
-    - name: Set Execution Policy to RemoteSigned
-      ansible.windows.win_powershell:
-        command: 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force'
+    # Ensure the logging directory does exist, if not create it
+    - name: Proof the logging path does exist
+      ansible.windows.win_file:
+        path: C:\Automation\logs\update
+        state: directory
 
-    - name: Set Execution Policy to Unrestricted
-      ansible.windows.win_powershell:
-        command: 'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force'
+    - name: Revoke 30d update block
+      ansible.windows.win_shell: |
+        $pause = (Get-Date).AddDays(0)
+        $pause = $pause.ToUniversalTime().ToString( "yyyy-MM-ddTHH:mm:ssZ" )
+        Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseUpdatesExpiryTime' -Value $pause 
 
-    - name: Install PSWindowsUpdate Module
-      ansible.windows.win_powershell:
-        command: 'Install-Module -Name PSWindowsUpdate -Force -AllowClobber'
+    - name: "Run Update Session Orchestrator check to clear GUI cached results"
+      ansible.windows.win_shell: |
+        Stop-Service -Name BITS,WaaSMedicSvc,WUAUSERV,CryptSvc -Force
+        Remove-Item -Path C:\Windows\System32\catroot2 -Recurse -Force
+        Remove-Item -Path C:\Windows\SoftwareDistribution -Recurse -Force
+        Start-Service -Name BITS,WaaSMedicSvc,WUAUSERV,CryptSvc
+        UsoClient RefreshSettings
+        UsoClient ScanInstallWait
 
-    - name: Add Microsoft Update Service
-      ansible.windows.win_powershell:
-        command: 'Add-WUServiceManager -MicrosoftUpdate -Force'
+    # Determine the current time, to be used with the log-file later
+    - name: Get current date and time
+      ansible.builtin.shell:
+        cmd: date '+%Y%m%d'
+        executable: /bin/bash
+      register: current_time
+      delegate_to: localhost
+      changed_when: false
 
-    - name: Run Windows Update via PowerShell
-      ansible.windows.win_powershell:
-        command: Install-WindowsUpdate -AcceptAll -AutoReboot
+    # Set the log-file name
+    - name: Set log-file name
+      ansible.builtin.set_fact:
+        log_file_name: "win-updates-log-{{ current_time.stdout | trim }}.txt"
+
+    # First search for pending patches of all categories
+    - name: Check for available updates
+      ansible.windows.win_updates:
+        category_names: '*'
+        reject_list: "{{ reject_list }}"
+        state: searched
+        server_selection: windows_update
+        log_path: "C:\\Automation\\logs\\update\\{{ log_file_name }}"
+      register: update_result
+
+    # Print the result in human readable format
+    - name: update check results
+      debug:
+        var: update_result
+
+    # Apply pending patches of all categories
+    - name: Apply pending updates
+      ansible.windows.win_updates:
+        category_names: '*'
+        reject_list: "{{ reject_list }}"
+        state: installed
+        server_selection: windows_update
+        reboot: true
+        reboot_timeout: 1800
+        log_path: "C:\\Automation\\logs\\update\\{{ log_file_name }}"
+      register: apply_result
+      retries: 2
+      delay: 60
+      until: apply_result is succeeded
+      ignore_errors: yes
+
+     # Print the result in human readable format
+    - name: Output update application results
+      debug:
+        var: apply_result
+
+    - name: Set update block to 30d
+      ansible.windows.win_shell: |
+        $pause = (Get-Date).AddDays(30)
+        $pause = $pause.ToUniversalTime().ToString( "yyyy-MM-ddTHH:mm:ssZ" )
+        Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseUpdatesExpiryTime' -Value $pause
