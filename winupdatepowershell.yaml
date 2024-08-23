@@ -10,11 +10,15 @@
     ansible_ssh_user: ssh
     ansible_ssh_pass: W1n0per2024!
     ansible_connection: ssh
+    ansible_shell_type: powershell
+    ansible_shell_executable: powershell.exe
+    vm_name: "01 - LAB - GAM"  # Nombre de la máquina virtual
+    vm_ip: "10.1.21.21"  # IP de la VM
 
   tasks: 
     - name: Power on the VM using PowerShell
       ansible.builtin.shell: |
-        Start-VM -Name "01 - LAB - GAM"
+        Start-VM -Name "{{ vm_name }}"
       args:
         executable: powershell.exe
 
