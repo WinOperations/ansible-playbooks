@@ -10,8 +10,6 @@
     ansible_ssh_user: ssh
     ansible_ssh_pass: W1n0per2024!
     ansible_connection: ssh
-    ansible_shell_type: powershell
-    ansible_shell_executable: powershell.exe
 
   tasks: 
     - name: Power on the VM using PowerShell
