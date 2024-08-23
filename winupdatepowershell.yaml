@@ -16,6 +16,7 @@
     ansible_become_method: runas
     ansible_become_user: "{{ ansible_user }}"
     vm_name: "01 - LAB - GAM" 
+    vm_ip: "10.1.21.24"
     
   tasks: 
     - name: Power on the VM using PowerShell
@@ -26,7 +27,7 @@
 
     - name: Wait for VM to become available
       ansible.builtin.wait_for:
-        host: "{{ 10.1.21.24 }}"
+        host: "{{ vm_ip }}"
         port: 5985
         timeout: 300
 
