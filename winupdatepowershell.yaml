@@ -3,7 +3,7 @@
 # Apply windows updates
 
 - name: Power on VM and perform Windows update via Powershell
-  hosts: all
+  hosts: windows
   become: no
   gather_facts: no
   vars:
