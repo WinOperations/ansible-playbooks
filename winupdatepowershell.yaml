@@ -11,6 +11,13 @@
     ansible_shell_executable: powershell.exe
 
   tasks:
+    - name: Set locale to UTF-8
+      ansible.builtin.shell: |
+        export LC_ALL=en_US.UTF-8
+        export LANG=en_US.UTF-8
+      args:
+        executable: /bin/bash
+  
     - name: Power on the VM using PowerShell
       ansible.builtin.shell: |
         Start-VM -Name "01 - LAB - GAM"
