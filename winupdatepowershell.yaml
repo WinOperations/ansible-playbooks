@@ -7,8 +7,8 @@
   become: no
   gather_facts: no
   vars:
-    ansible_user: "ssh"
-    ansible_password: "W1n0per2024!"
+    ansible_user: "Administrador"
+    ansible_password: "w1N0p€r2025!"
     ansible_port: 22
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_ssh_retries: 3
