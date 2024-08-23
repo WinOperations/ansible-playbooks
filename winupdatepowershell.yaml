@@ -1,4 +1,7 @@
 ---
+# DESCRIPTION
+# Apply windows updates
+
 - name: Power on VM and perform Windows update via Powershell
   hosts: windows
   become: no
