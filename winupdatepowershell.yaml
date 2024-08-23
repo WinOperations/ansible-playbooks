@@ -1,31 +1,50 @@
 ---
-- name: Wake up VM and perform Windows update via Powershell
+- name: Power on VM and perform Windows update via Powershell
   hosts: windows
   become: no
+  gather_facts: no
   vars:
-    vm_name: "{{ vm_name | default('default_vm_name') }}"  # Nombre de la VM, puede ser pasado como variable
-    hyperv_host_ip: "10.1.21.20"  # IP del host Hyper-V
-    ansible_winrm_port: 5985
+    ansible_ssh_user: ssh
+    ansible_ssh_pass: W1n0per2024!
+    ansible_shell_type: powershell
+    ansible_shell_executable: powershell.exe
+
   tasks:
-    - name: Ensure the VM is started on Hyper-V
-      win_shell: |
-        $vm = Get-VM -Name "{{ vm_name }}"
-        if ($vm.State -eq 'Off') {
-            Start-VM -Name "{{ vm_name }}"
-            Start-Sleep -Seconds 30 # Optional sleep to give the VM time to start
-        }
-      run_once: yes
-      delegate_to: "{{ hyperv_host_ip }}"
+    - name: Power on the VM using PowerShell
+      ansible.builtin.shell: |
+        Start-VM -Name "01 - LAB - GAM"
+      args:
+        executable: powershell.exe
 
-    - name: Wait for the VM to become reachable
-      wait_for:
-        host: "{{ ansible_host }}"
-        port: 5986  # WinRM port, or use 3389 for RDP, or 22 for SSH
-        delay: 10
+    - name: Wait for VM to become available
+      ansible.builtin.wait_for:
+        host: "{{ vm_ip }}"
+        port: 5985
         timeout: 300
-      delegate_to: localhost
 
-    - name: Perform Windows Update via PowerShell
+- name: Prepare and Update Windows VM via PowerShell
+  hosts: windows_vm
+  tasks:
+    - name: Set TLS 1.2 as Security Protocol
       ansible.windows.win_powershell:
-        command: |
-          Install-WindowsUpdate -AcceptAll -AutoReboot
+        command: '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12'
+        
+    - name: Set Execution Policy to RemoteSigned
+      ansible.windows.win_powershell:
+        command: 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force'
+
+    - name: Set Execution Policy to Unrestricted
+      ansible.windows.win_powershell:
+        command: 'Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force'
+
+    - name: Install PSWindowsUpdate Module
+      ansible.windows.win_powershell:
+        command: 'Install-Module -Name PSWindowsUpdate -Force -AllowClobber'
+
+    - name: Add Microsoft Update Service
+      ansible.windows.win_powershell:
+        command: 'Add-WUServiceManager -MicrosoftUpdate -Force'
+
+    - name: Run Windows Update via PowerShell
+      ansible.windows.win_powershell:
+        command: Install-WindowsUpdate -AcceptAll -AutoReboot
