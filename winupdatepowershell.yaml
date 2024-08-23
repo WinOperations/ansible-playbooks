@@ -12,24 +12,20 @@
     ansible_port: 22
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     ansible_ssh_retries: 3
+    ansible_shell_type: powershell
     ansible_become_method: runas
     ansible_become_user: "{{ ansible_user }}"
-    ansible_ssh_user: ssh
-    ansible_ssh_pass: W1n0per2024!
-    ansible_connection: ssh
-    vm_name: "01 - LAB - GAM"  # Nombre de la máquina virtual
-    vm_ip: "10.1.21.21"  # IP de la VM
-
+    
   tasks: 
     - name: Power on the VM using PowerShell
       ansible.builtin.shell: |
-        Start-VM -Name "{{ vm_name }}"
+        Start-VM -Name "{{ 01 - LAB - GAM }}"
       args:
         executable: powershell.exe
 
     - name: Wait for VM to become available
       ansible.builtin.wait_for:
-        host: "{{ vm_ip }}"
+        host: "{{ 10.1.21.24 }}"
         port: 5985
         timeout: 300
 
