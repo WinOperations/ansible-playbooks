@@ -31,7 +31,7 @@
         timeout: 300
 
 - name: Prepare and Update Windows VM via PowerShell
-  hosts: 01 - LAB - GAM
+  hosts: "10.1.21.24"
   tasks:
     - name: Set TLS 1.2 as Security Protocol
       ansible.windows.win_powershell:
