@@ -15,11 +15,12 @@
     ansible_shell_type: powershell
     ansible_become_method: runas
     ansible_become_user: "{{ ansible_user }}"
+    vm_name: "'01 - LAB - GAM'" 
     
   tasks: 
     - name: Power on the VM using PowerShell
       ansible.builtin.shell: |
-        Start-VM -Name "{{ 01 - LAB - GAM }}"
+        Start-VM -Name "{{ vm_name }}"
       args:
         executable: powershell.exe
 
